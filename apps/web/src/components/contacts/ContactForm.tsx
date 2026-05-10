@@ -25,6 +25,47 @@ interface Props {
   submitLabel?: string;
 }
 
+function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (tags: string[]) => void; placeholder?: string }) {
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const addTag = (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed && !tags.includes(trimmed)) onChange([...tags, trimmed]);
+    setInput("");
+  };
+
+  const removeTag = (index: number) => onChange(tags.filter((_, i) => i !== index));
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(input); }
+    else if (e.key === "Backspace" && !input && tags.length > 0) removeTag(tags.length - 1);
+  };
+
+  return (
+    <div
+      className="flex flex-wrap gap-1.5 p-2 min-h-10 border border-input rounded-md bg-background cursor-text"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {tags.map((tag, i) => (
+        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted rounded text-sm">
+          {tag}
+          <button type="button" onClick={() => removeTag(i)} className="text-muted-foreground hover:text-foreground leading-none">×</button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={() => { if (input.trim()) addTag(input); }}
+        placeholder={tags.length === 0 ? placeholder : ""}
+        className="flex-1 min-w-28 outline-none bg-transparent text-sm placeholder:text-muted-foreground"
+      />
+    </div>
+  );
+}
+
 function TextInput({
   label, name, type = "text", value, onChange, required = false,
 }: {
@@ -157,9 +198,7 @@ export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLa
   const [familyNote, setFamilyNote] = useState<string>(
     initial?.family ? ((initial.family as Record<string, unknown>).text as string) ?? "" : ""
   );
-  const [hobbiesNote, setHobbiesNote] = useState<string>(
-    initial?.hobbies?.join("\n") ?? ""
-  );
+  const [hobbies, setHobbies] = useState<string[]>(initial?.hobbies ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
 
@@ -191,7 +230,7 @@ export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLa
       await onSubmit({
         ...form,
         family: familyNote.trim() ? { text: familyNote.trim() } : null,
-        hobbies: hobbiesNote.trim() ? [hobbiesNote.trim()] : null,
+        hobbies: hobbies.length > 0 ? hobbies : null,
         categoryIds: form.categoryIds ?? [],
       } as FormData);
     } catch (err) {
@@ -279,10 +318,8 @@ export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLa
 
       <section>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Sở thích</h3>
-        <Textarea
-          value={hobbiesNote} onChange={(e) => setHobbiesNote(e.target.value)} rows={3}
-          placeholder="Đọc sách, du lịch, thể thao..."
-        />
+        <TagInput tags={hobbies} onChange={setHobbies} placeholder="Nhập sở thích rồi Enter..." />
+        <p className="text-xs text-muted-foreground mt-1">Nhấn Enter hoặc dấu phẩy để thêm</p>
       </section>
 
       <section>

@@ -122,7 +122,14 @@ export default function ContactDetailPage() {
               <Row label="Gia đình" value={(contact.family as { text?: string }).text} />
             )}
             {contact.hobbies && contact.hobbies.length > 0 && (
-              <Row label="Sở thích" value={contact.hobbies.join("\n")} />
+              <div className="flex gap-3 py-2">
+                <span className="text-sm text-muted-foreground w-36 shrink-0">Sở thích</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {contact.hobbies.map((h, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-muted rounded text-sm">{h}</span>
+                  ))}
+                </div>
+              </div>
             )}
             <Row label="Ghi chú" value={contact.notes} />
           </CardContent>

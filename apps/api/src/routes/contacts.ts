@@ -1,0 +1,198 @@
+import { Hono } from "hono";
+import { getAuth } from "@hono/clerk-auth";
+import { eq, and, isNull, isNotNull, or, ilike, inArray } from "drizzle-orm";
+import { db } from "../db";
+import { contacts, contactCategories, categories } from "../db/schema";
+
+const app = new Hono();
+
+// Làm sạch body trước khi insert/update
+function sanitize(body: Record<string, unknown>): Record<string, unknown> {
+  // Loại bỏ các field do DB quản lý — client không được ghi đè
+  const readonly = ["id", "userId", "createdAt", "updatedAt", "archivedAt", "categoryIds", "categories"];
+  const timeFields    = ["workStartAm", "lunchBreak", "workStartPm", "workEndPm"];
+  const numericFields = ["birthYear"];
+
+  const out: Record<string, unknown> = { ...body };
+  for (const key of readonly) delete out[key];
+  for (const key of timeFields)    { if (out[key] === "") out[key] = null; }
+  for (const key of numericFields) { if (out[key] === "" || out[key] === undefined) out[key] = null; }
+  return out;
+}
+
+// Lấy danh sách categoryId của một contact
+async function getContactCategoryIds(contactId: string): Promise<string[]> {
+  const rows = await db
+    .select({ categoryId: contactCategories.categoryId })
+    .from(contactCategories)
+    .where(eq(contactCategories.contactId, contactId));
+  return rows.map((r) => r.categoryId);
+}
+
+// Gán categories cho contact (replace toàn bộ) — atomic
+async function syncCategories(contactId: string, categoryIds: string[]) {
+  await db.delete(contactCategories).where(eq(contactCategories.contactId, contactId));
+  if (categoryIds.length > 0) {
+    await db.insert(contactCategories).values(
+      categoryIds.map((categoryId) => ({ contactId, categoryId })),
+    );
+  }
+}
+
+// Lấy contacts kèm categories (join thủ công để tránh N+1)
+async function withCategories(rows: (typeof contacts.$inferSelect)[]) {
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+
+  const junctions = await db
+    .select({
+      contactId: contactCategories.contactId,
+      id:        categories.id,
+      name:      categories.name,
+      color:     categories.color,
+      sortIndex: categories.sortIndex,
+    })
+    .from(contactCategories)
+    .innerJoin(categories, eq(contactCategories.categoryId, categories.id))
+    .where(inArray(contactCategories.contactId, ids))
+    .orderBy(categories.sortIndex);
+
+  const map = new Map<string, typeof junctions>();
+  for (const j of junctions) {
+    if (!map.has(j.contactId)) map.set(j.contactId, []);
+    map.get(j.contactId)!.push(j);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    categories: (map.get(r.id) ?? []).map(({ contactId: _c, ...cat }) => cat),
+  }));
+}
+
+// GET /api/contacts — hỗ trợ ?search=&sort=&categoryId=
+app.get("/", async (c) => {
+  const userId     = getAuth(c)!.userId!;
+  const search     = c.req.query("search") ?? "";
+  const sort       = c.req.query("sort")   ?? "fullName";
+  const categoryId = c.req.query("categoryId");
+
+  let rows = await db.query.contacts.findMany({
+    where: and(
+      eq(contacts.userId, userId),
+      isNull(contacts.archivedAt),
+      search
+        ? or(
+            ilike(contacts.fullName, `%${search}%`),
+            ilike(contacts.phone ?? "", `%${search}%`),
+          )
+        : undefined,
+    ),
+    orderBy: (t, { asc }) =>
+      sort === "createdAt" ? [asc(t.createdAt)] : [asc(t.fullName)],
+  });
+
+  // Filter theo category sau khi query (đơn giản, đủ cho scale nhỏ)
+  if (categoryId) {
+    const inCategory = await db
+      .select({ contactId: contactCategories.contactId })
+      .from(contactCategories)
+      .where(eq(contactCategories.categoryId, categoryId));
+    const idSet = new Set(inCategory.map((r) => r.contactId));
+    rows = rows.filter((r) => idSet.has(r.id));
+  }
+
+  return c.json(await withCategories(rows));
+});
+
+// GET /api/contacts/archived
+app.get("/archived", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const rows = await db.query.contacts.findMany({
+    where: and(eq(contacts.userId, userId), isNotNull(contacts.archivedAt)),
+    orderBy: (t, { desc }) => [desc(t.archivedAt)],
+  });
+  return c.json(await withCategories(rows));
+});
+
+// GET /api/contacts/:id
+app.get("/:id", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const row = await db.query.contacts.findFirst({
+    where: and(eq(contacts.id, c.req.param("id")), eq(contacts.userId, userId)),
+  });
+  if (!row) return c.json({ error: "Not found" }, 404);
+  const [withCat] = await withCategories([row]);
+  return c.json(withCat);
+});
+
+// POST /api/contacts
+app.post("/", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const { categoryIds = [], ...body } = await c.req.json<{ categoryIds?: string[]; [k: string]: unknown }>();
+
+  const [row] = await db.insert(contacts).values({ ...sanitize(body), userId } as typeof contacts.$inferInsert).returning();
+
+  await syncCategories(row.id, categoryIds);
+
+  const [withCat] = await withCategories([row]);
+  return c.json(withCat, 201);
+});
+
+// PUT /api/contacts/:id
+app.put("/:id", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const id     = c.req.param("id");
+  const { categoryIds, ...body } = await c.req.json<{ categoryIds?: string[]; [k: string]: unknown }>();
+
+  const [row] = await db
+    .update(contacts)
+    .set({ ...sanitize(body), updatedAt: new Date() })
+    .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
+    .returning();
+
+  if (!row) return c.json({ error: "Not found" }, 404);
+
+  if (categoryIds !== undefined) {
+    await syncCategories(id, categoryIds);
+  }
+
+  const [withCat] = await withCategories([row]);
+  return c.json(withCat);
+});
+
+// DELETE /api/contacts/:id
+app.delete("/:id", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const [row] = await db
+    .delete(contacts)
+    .where(and(eq(contacts.id, c.req.param("id")), eq(contacts.userId, userId)))
+    .returning();
+  if (!row) return c.json({ error: "Not found" }, 404);
+  return c.json({ success: true });
+});
+
+// PATCH /api/contacts/:id/archive
+app.patch("/:id/archive", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const [row] = await db
+    .update(contacts)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(contacts.id, c.req.param("id")), eq(contacts.userId, userId)))
+    .returning();
+  if (!row) return c.json({ error: "Not found" }, 404);
+  return c.json(row);
+});
+
+// PATCH /api/contacts/:id/unarchive
+app.patch("/:id/unarchive", async (c) => {
+  const userId = getAuth(c)!.userId!;
+  const [row] = await db
+    .update(contacts)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(and(eq(contacts.id, c.req.param("id")), eq(contacts.userId, userId)))
+    .returning();
+  if (!row) return c.json({ error: "Not found" }, 404);
+  return c.json(row);
+});
+
+export default app;

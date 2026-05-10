@@ -10,7 +10,7 @@ const PRESET_COLORS = [
   "#f97316", "#6b7280",
 ];
 
-type FormData = Omit<Contact, "id" | "userId" | "createdAt" | "updatedAt" | "archivedAt"> & {
+type FormData = Omit<Contact, "id" | "userId" | "createdAt" | "updatedAt" | "archivedAt" | "family" | "hobbies"> & {
   categoryIds: string[];
 };
 

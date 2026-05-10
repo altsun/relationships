@@ -9,7 +9,7 @@ const app = new Hono();
 // Làm sạch body trước khi insert/update
 function sanitize(body: Record<string, unknown>): Record<string, unknown> {
   // Loại bỏ các field do DB quản lý — client không được ghi đè
-  const readonly = ["id", "userId", "createdAt", "updatedAt", "archivedAt", "categoryIds", "categories"];
+  const readonly = ["id", "userId", "createdAt", "updatedAt", "archivedAt", "categoryIds", "categories", "family", "hobbies"];
   const timeFields    = ["workStartAm", "lunchBreak", "workStartPm", "workEndPm"];
   const numericFields = ["birthYear"];
 

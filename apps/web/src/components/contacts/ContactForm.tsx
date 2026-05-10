@@ -91,8 +91,8 @@ function CategorySelect({
             return (
               <button
                 key={cat.id} type="button" onClick={() => toggle(cat.id)}
-                className={`border-2 rounded-full transition-all ${active ? "opacity-100 scale-105" : "opacity-50 hover:opacity-80"}`}
-                style={{ borderColor: active ? cat.color : "transparent" }}
+                className={`rounded-full leading-[0] outline-2 outline-offset-2 transition-all ${active ? "opacity-100 scale-105" : "opacity-50 hover:opacity-80"}`}
+                style={{ outlineColor: active ? cat.color : "transparent" }}
               >
                 <CategoryBadge color={cat.color} name={cat.name} />
               </button>

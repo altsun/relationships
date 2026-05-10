@@ -97,10 +97,10 @@ export default function ContactsPage() {
             <button
               key={cat.id}
               onClick={() => toggleCat(cat.id)}
-              className={`border-2 rounded-full transition-all ${
+              className={`rounded-full leading-[0] outline-2 outline-offset-2 transition-all ${
                 activeCatId === cat.id ? "opacity-100 scale-105" : "opacity-70 hover:opacity-90"
               }`}
-              style={{ borderColor: activeCatId === cat.id ? cat.color : "transparent" }}
+              style={{ outlineColor: activeCatId === cat.id ? cat.color : "transparent" }}
             >
               <CategoryBadge color={cat.color} name={cat.name} />
             </button>

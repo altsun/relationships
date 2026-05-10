@@ -70,11 +70,11 @@ export default function ContactDetailPage() {
           <div className="flex gap-2 shrink-0">
             <Link
               to={`/contacts/${id}/edit`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={buttonVariants({ variant: "default", size: "sm" })}
             >
               <Pencil size={14} /> Sửa
             </Link>
-            <Button variant="outline" size="sm" onClick={handleArchive}>
+            <Button variant="ghost" size="sm" onClick={handleArchive}>
               <Archive size={14} /> Lưu trữ
             </Button>
             <Button variant="destructive" size="sm" onClick={handleDelete}>

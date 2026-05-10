@@ -1,8 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { api } from "@/lib/api";
 import type { Contact, Category } from "@/types";
+
+const PRESET_COLORS = [
+  "#3b82f6", "#ef4444", "#10b981", "#f59e0b",
+  "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16",
+  "#f97316", "#6b7280",
+];
 
 type FormData = Omit<Contact, "id" | "userId" | "createdAt" | "updatedAt" | "archivedAt"> & {
   categoryIds: string[];
@@ -42,37 +48,98 @@ function TextInput({
 }
 
 function CategorySelect({
-  selected, categories, onChange,
+  selected, categories, onChange, onCreated,
 }: {
   selected: string[]; categories: Category[];
   onChange: (ids: string[]) => void;
+  onCreated: (cat: Category) => void;
 }) {
+  const { getToken } = useAuth();
+  const [adding, setAdding]   = useState(false);
+  const [name, setName]       = useState("");
+  const [color, setColor]     = useState(PRESET_COLORS[0]);
+  const [saving, setSaving]   = useState(false);
+  const [err, setErr]         = useState("");
+  const inputRef              = useRef<HTMLInputElement>(null);
+
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
 
-  if (categories.length === 0) return null;
+  const openAdd = () => { setAdding(true); setName(""); setColor(PRESET_COLORS[0]); setErr(""); setTimeout(() => inputRef.current?.focus(), 50); };
+  const cancelAdd = () => { setAdding(false); setErr(""); };
+
+  const saveNew = async () => {
+    if (!name.trim()) return;
+    setSaving(true); setErr("");
+    try {
+      const token = await getToken();
+      const cat = await api.categories.create({ name: name.trim(), color, sortIndex: categories.length }, token!) as Category;
+      onCreated(cat);
+      onChange([...selected, cat.id]);
+      setAdding(false);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
-      <div className="flex flex-wrap gap-2">
-        {categories.map((cat) => {
-          const active = selected.includes(cat.id);
-          return (
+    <div className="space-y-3">
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => {
+            const active = selected.includes(cat.id);
+            return (
+              <button
+                key={cat.id} type="button" onClick={() => toggle(cat.id)}
+                className={`border-2 rounded-full transition-all ${active ? "opacity-100 scale-105" : "opacity-50 hover:opacity-80"}`}
+                style={{ borderColor: active ? cat.color : "transparent" }}
+              >
+                <CategoryBadge color={cat.color} name={cat.name} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {adding ? (
+        <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <input
+            ref={inputRef}
+            value={name} onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveNew(); } if (e.key === "Escape") cancelAdd(); }}
+            placeholder="Tên category..."
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <div className="flex gap-1.5 flex-wrap">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c} type="button" onClick={() => setColor(c)}
+                className={`w-6 h-6 rounded-full transition-transform ${color === c ? "ring-2 ring-offset-1 ring-gray-500 scale-110" : "hover:scale-110"}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+          {err && <p className="text-xs text-red-600">{err}</p>}
+          <div className="flex gap-2">
             <button
-              key={cat.id}
-              type="button"
-              onClick={() => toggle(cat.id)}
-              className={`border-2 rounded-full transition-all ${
-                active ? "opacity-100 scale-105" : "opacity-50 hover:opacity-80"
-              }`}
-              style={{ borderColor: active ? cat.color : "transparent" }}
+              type="button" onClick={saveNew} disabled={saving || !name.trim()}
+              className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              <CategoryBadge color={cat.color} name={cat.name} />
+              {saving ? "Đang tạo..." : "Tạo"}
             </button>
-          );
-        })}
-      </div>
+            <button type="button" onClick={cancelAdd} className="text-xs text-gray-500 hover:text-gray-700 px-2">Huỷ</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button" onClick={openAdd}
+          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+        >
+          <span className="text-lg leading-none">+</span> Tạo category mới
+        </button>
+      )}
     </div>
   );
 }
@@ -151,10 +218,8 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
           selected={form.categoryIds ?? []}
           categories={allCats}
           onChange={(ids) => setForm((f) => ({ ...f, categoryIds: ids }))}
+          onCreated={(cat) => setAllCats((prev) => [...prev, cat])}
         />
-        {allCats.length === 0 && (
-          <p className="text-sm text-gray-400">Chưa có category — tạo tại trang Quản lý categories.</p>
-        )}
       </section>
 
       <section>

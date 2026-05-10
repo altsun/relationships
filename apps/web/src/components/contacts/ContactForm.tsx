@@ -10,7 +10,7 @@ const PRESET_COLORS = [
   "#f97316", "#6b7280",
 ];
 
-type FormData = Omit<Contact, "id" | "userId" | "createdAt" | "updatedAt" | "archivedAt" | "family" | "hobbies"> & {
+type FormData = Omit<Contact, "id" | "userId" | "createdAt" | "updatedAt" | "archivedAt"> & {
   categoryIds: string[];
 };
 
@@ -157,6 +157,12 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
     categoryIds: [],
     ...initial,
   });
+  const [familyNote, setFamilyNote] = useState<string>(
+    initial?.family ? ((initial.family as Record<string, unknown>).text as string) ?? "" : ""
+  );
+  const [hobbiesNote, setHobbiesNote] = useState<string>(
+    initial?.hobbies?.join("\n") ?? ""
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
 
@@ -185,7 +191,12 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
     setLoading(true);
     setError("");
     try {
-      await onSubmit({ ...form, categoryIds: form.categoryIds ?? [] } as FormData);
+      await onSubmit({
+        ...form,
+        family: familyNote.trim() ? { text: familyNote.trim() } : null,
+        hobbies: hobbiesNote.trim() ? [hobbiesNote.trim()] : null,
+        categoryIds: form.categoryIds ?? [],
+      } as FormData);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -259,6 +270,24 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
             <TextInput label="Tan làm"       type="time" name="workEndPm"   value={form.workEndPm   ?? ""} onChange={set} />
           </div>
         )}
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Gia đình</h3>
+        <textarea
+          value={familyNote} onChange={(e) => setFamilyNote(e.target.value)} rows={3}
+          placeholder="Vợ/chồng, con cái, bố mẹ..."
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Sở thích</h3>
+        <textarea
+          value={hobbiesNote} onChange={(e) => setHobbiesNote(e.target.value)} rows={3}
+          placeholder="Đọc sách, du lịch, thể thao..."
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </section>
 
       <section>

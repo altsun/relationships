@@ -115,6 +115,12 @@ export default function ContactDetailPage() {
               <Row label="Tan làm"       value={contact.workEndPm} />
             </>
           )}
+          {contact.family && (contact.family as { text?: string }).text && (
+            <Row label="Gia đình" value={(contact.family as { text?: string }).text} />
+          )}
+          {contact.hobbies && contact.hobbies.length > 0 && (
+            <Row label="Sở thích" value={contact.hobbies.join("\n")} />
+          )}
           <Row label="Ghi chú" value={contact.notes} />
         </div>
       </div>

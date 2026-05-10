@@ -5,6 +5,8 @@ import { Plus, Search, Tag } from "lucide-react";
 import Layout from "@/components/Layout";
 import ContactCard from "@/components/contacts/ContactCard";
 import { CategoryBadge } from "@/components/CategoryBadge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import type { Contact, Category } from "@/types";
 
@@ -17,7 +19,6 @@ export default function ContactsPage() {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
 
-  // Load categories once
   useEffect(() => {
     (async () => {
       const token = await getToken();
@@ -41,7 +42,6 @@ export default function ContactsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => load(search, activeCatId), 300);
     return () => clearTimeout(t);
@@ -63,40 +63,36 @@ export default function ContactsPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Các mối quan hệ</h1>
+        <h1 className="text-xl font-semibold text-foreground">Các mối quan hệ</h1>
         <Link
           to="/contacts/new"
-          className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+          className={buttonVariants({ variant: "default" })}
         >
           <Plus size={16} /> Thêm mới
         </Link>
       </div>
 
-      {/* Search */}
       <div className="relative mb-3">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
           type="text"
           placeholder="Tìm kiếm tên, số điện thoại..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="pl-9"
         />
       </div>
 
-      {/* Category filter chips */}
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          <button
+          <Button
+            variant={activeCatId === undefined ? "default" : "outline"}
+            size="sm"
             onClick={() => setActiveCatId(undefined)}
-            className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-              activeCatId === undefined
-                ? "bg-gray-900 text-white border-gray-900"
-                : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
-            }`}
+            className="rounded-full text-xs h-7"
           >
             <Tag size={11} /> Tất cả
-          </button>
+          </Button>
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -112,12 +108,12 @@ export default function ContactsPage() {
         </div>
       )}
 
-      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+      {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
       {loading ? (
-        <div className="text-center text-gray-500 py-12">Đang tải...</div>
+        <div className="text-center text-muted-foreground py-12">Đang tải...</div>
       ) : contacts.length === 0 ? (
-        <div className="text-center text-gray-500 py-12">
+        <div className="text-center text-muted-foreground py-12">
           {search || activeCatId ? "Không tìm thấy kết quả" : "Chưa có contact nào"}
         </div>
       ) : (

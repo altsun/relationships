@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { CategoryBadge } from "@/components/CategoryBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import type { Contact, Category } from "@/types";
 
@@ -28,20 +32,14 @@ function TextInput({
   required?: boolean;
 }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-      </label>
+    <div className="space-y-1">
+      <Label htmlFor={name}>
+        {label}{required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
       {name === "notes" ? (
-        <textarea
-          name={name} value={value} onChange={onChange} rows={3}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <Textarea id={name} name={name} value={value} onChange={onChange} rows={3} />
       ) : (
-        <input
-          type={type} name={name} value={value} onChange={onChange} required={required}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <Input id={name} type={type} name={name} value={value} onChange={onChange} required={required} />
       )}
     </div>
   );
@@ -104,38 +102,36 @@ function CategorySelect({
       )}
 
       {adding ? (
-        <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <input
+        <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border border-border">
+          <Input
             ref={inputRef}
             value={name} onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveNew(); } if (e.key === "Escape") cancelAdd(); }}
             placeholder="Tên category..."
-            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="flex gap-1.5 flex-wrap">
             {PRESET_COLORS.map((c) => (
               <button
                 key={c} type="button" onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-full transition-transform ${color === c ? "ring-2 ring-offset-1 ring-gray-500 scale-110" : "hover:scale-110"}`}
+                className={`w-6 h-6 rounded-full transition-transform ${color === c ? "ring-2 ring-offset-1 ring-foreground/50 scale-110" : "hover:scale-110"}`}
                 style={{ backgroundColor: c }}
               />
             ))}
           </div>
-          {err && <p className="text-xs text-red-600">{err}</p>}
+          {err && <p className="text-xs text-destructive">{err}</p>}
           <div className="flex gap-2">
-            <button
-              type="button" onClick={saveNew} disabled={saving || !name.trim()}
-              className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            <Button
+              type="button" size="sm" onClick={saveNew} disabled={saving || !name.trim()}
             >
               {saving ? "Đang tạo..." : "Tạo"}
-            </button>
-            <button type="button" onClick={cancelAdd} className="text-xs text-gray-500 hover:text-gray-700 px-2">Huỷ</button>
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={cancelAdd}>Huỷ</Button>
           </div>
         </div>
       ) : (
         <button
           type="button" onClick={openAdd}
-          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+          className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
         >
           <span className="text-lg leading-none">+</span> Tạo category mới
         </button>
@@ -207,11 +203,11 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-md">{error}</div>
+        <div className="bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-md">{error}</div>
       )}
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Thông tin cơ bản</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Thông tin cơ bản</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="Họ tên"              name="fullName"  value={form.fullName  ?? ""} onChange={set} required />
           <TextInput label="Số điện thoại"       name="phone"     value={form.phone     ?? ""} onChange={set} />
@@ -224,7 +220,7 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Categories</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Categories</h3>
         <CategorySelect
           selected={form.categoryIds ?? []}
           categories={allCats}
@@ -234,7 +230,7 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Địa lý</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Địa lý</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="Quê quán" name="hometown" value={form.hometown ?? ""} onChange={set} />
           <TextInput label="Địa chỉ"  name="address"  value={form.address  ?? ""} onChange={set} />
@@ -242,7 +238,7 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Học vấn</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Học vấn</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="Đại học" name="university" value={form.university ?? ""} onChange={set} />
           <TextInput label="THPT"    name="highSchool" value={form.highSchool ?? ""} onChange={set} />
@@ -250,7 +246,7 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Công việc</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Công việc</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="Chức danh" name="jobTitle" value={form.jobTitle ?? ""} onChange={set} />
         </div>
@@ -258,9 +254,9 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
           <input
             type="checkbox" id="hasWorkSchedule" name="hasWorkSchedule"
             checked={form.hasWorkSchedule ?? false} onChange={set}
-            className="rounded border-gray-300"
+            className="rounded border-input"
           />
-          <label htmlFor="hasWorkSchedule" className="text-sm text-gray-700">Có lịch làm việc cố định</label>
+          <Label htmlFor="hasWorkSchedule">Có lịch làm việc cố định</Label>
         </div>
         {form.hasWorkSchedule && (
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -273,35 +269,30 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Gia đình</h3>
-        <textarea
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Gia đình</h3>
+        <Textarea
           value={familyNote} onChange={(e) => setFamilyNote(e.target.value)} rows={3}
           placeholder="Vợ/chồng, con cái, bố mẹ..."
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Sở thích</h3>
-        <textarea
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Sở thích</h3>
+        <Textarea
           value={hobbiesNote} onChange={(e) => setHobbiesNote(e.target.value)} rows={3}
           placeholder="Đọc sách, du lịch, thể thao..."
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </section>
 
       <section>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Ghi chú</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ghi chú</h3>
         <TextInput label="Ghi chú" name="notes" value={form.notes ?? ""} onChange={set} />
       </section>
 
       <div className="flex justify-end">
-        <button
-          type="submit" disabled={loading}
-          className="bg-blue-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
+        <Button type="submit" disabled={loading}>
           {loading ? "Đang lưu..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

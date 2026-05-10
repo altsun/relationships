@@ -3,6 +3,9 @@ import { useAuth } from "@clerk/clerk-react";
 import { Plus, Pencil, Trash2, Check, X, GripVertical } from "lucide-react";
 import Layout from "@/components/Layout";
 import { CategoryBadge } from "@/components/CategoryBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import type { Category } from "@/types";
 
@@ -39,12 +42,12 @@ function EditRow({ initial, onSave, onCancel }: EditRowProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <input
+        <Input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") onCancel(); }}
-          className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1"
           placeholder="Tên category"
         />
         <div className="flex gap-1">
@@ -57,16 +60,16 @@ function EditRow({ initial, onSave, onCancel }: EditRowProps) {
             />
           ))}
         </div>
-        <button onClick={save} disabled={saving} className="text-green-600 hover:text-green-700">
+        <Button variant="ghost" size="icon-sm" onClick={save} disabled={saving} className="text-green-600 hover:text-green-700">
           <Check size={18} />
-        </button>
-        <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
+        </Button>
+        <Button variant="ghost" size="icon-sm" onClick={onCancel} className="text-muted-foreground">
           <X size={18} />
-        </button>
+        </Button>
       </div>
-      {error && <p className="text-red-600 text-xs">{error}</p>}
+      {error && <p className="text-destructive text-xs">{error}</p>}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-400">Xem trước:</span>
+        <span className="text-xs text-muted-foreground">Xem trước:</span>
         <CategoryBadge color={color} name={name || "Tên category"} />
       </div>
     </div>
@@ -122,80 +125,75 @@ export default function CategoriesPage() {
     <Layout>
       <div className="max-w-xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Quản lý categories</h1>
+          <h1 className="text-xl font-semibold text-foreground">Quản lý categories</h1>
           {!creating && (
-            <button
-              onClick={() => setCreating(true)}
-              className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
+            <Button onClick={() => setCreating(true)}>
               <Plus size={16} /> Tạo mới
-            </button>
+            </Button>
           )}
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Đang tải...</div>
+          <div className="text-center py-12 text-muted-foreground">Đang tải...</div>
         ) : (
           <div className="space-y-2">
             {creating && (
-              <div className="bg-white rounded-lg border border-blue-300 p-4">
-                <EditRow
-                  initial={{ name: "", color: PRESET_COLORS[0] }}
-                  onSave={create}
-                  onCancel={() => setCreating(false)}
-                />
-              </div>
+              <Card className="border-primary/40">
+                <CardContent className="py-4">
+                  <EditRow
+                    initial={{ name: "", color: PRESET_COLORS[0] }}
+                    onSave={create}
+                    onCancel={() => setCreating(false)}
+                  />
+                </CardContent>
+              </Card>
             )}
 
             {cats.length === 0 && !creating && (
-              <div className="text-center py-12 text-gray-500">Chưa có category nào</div>
+              <div className="text-center py-12 text-muted-foreground">Chưa có category nào</div>
             )}
 
             {cats.map((cat, idx) => (
-              <div key={cat.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                {editingId === cat.id ? (
-                  <EditRow
-                    initial={{ name: cat.name, color: cat.color }}
-                    onSave={(name, color) => update(cat.id, name, color)}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <GripVertical size={16} className="text-gray-300 cursor-grab shrink-0" />
-                    <CategoryBadge color={cat.color} name={cat.name} />
-                    <span className="text-xs text-gray-400 ml-auto">#{idx + 1}</span>
-                    <button onClick={() => setEditingId(cat.id)} className="text-gray-400 hover:text-gray-600">
-                      <Pencil size={15} />
-                    </button>
-                    <button onClick={() => remove(cat.id)} className="text-gray-400 hover:text-red-600">
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                )}
-
-                {deleteError?.id === cat.id && (
-                  <div className="mt-3 bg-red-50 rounded-md p-3 text-sm">
-                    <p className="text-red-700 font-medium">
-                      Category đang được gán cho {deleteError.count} contact.
-                    </p>
-                    <p className="text-red-600 mt-0.5">Xoá sẽ gỡ khỏi tất cả các contact đó.</p>
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => remove(cat.id, true)}
-                        className="bg-red-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-red-700"
-                      >
-                        Xoá anyway
-                      </button>
-                      <button
-                        onClick={() => setDeleteError(null)}
-                        className="border border-gray-300 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-50"
-                      >
-                        Huỷ
-                      </button>
+              <Card key={cat.id}>
+                <CardContent className="py-3">
+                  {editingId === cat.id ? (
+                    <EditRow
+                      initial={{ name: cat.name, color: cat.color }}
+                      onSave={(name, color) => update(cat.id, name, color)}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <GripVertical size={16} className="text-muted-foreground/30 cursor-grab shrink-0" />
+                      <CategoryBadge color={cat.color} name={cat.name} />
+                      <span className="text-xs text-muted-foreground ml-auto">#{idx + 1}</span>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setEditingId(cat.id)} className="text-muted-foreground">
+                        <Pencil size={15} />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => remove(cat.id)} className="text-muted-foreground hover:text-destructive">
+                        <Trash2 size={15} />
+                      </Button>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  {deleteError?.id === cat.id && (
+                    <div className="mt-3 bg-destructive/10 rounded-md p-3 text-sm">
+                      <p className="text-destructive font-medium">
+                        Category đang được gán cho {deleteError.count} contact.
+                      </p>
+                      <p className="text-destructive/80 mt-0.5">Xoá sẽ gỡ khỏi tất cả các contact đó.</p>
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" variant="destructive" onClick={() => remove(cat.id, true)}>
+                          Xoá anyway
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setDeleteError(null)}>
+                          Huỷ
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

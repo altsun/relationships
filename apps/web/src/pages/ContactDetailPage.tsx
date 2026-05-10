@@ -15,7 +15,7 @@ function Row({ label, value }: { label: string; value?: string | number | null }
   return (
     <div className="flex gap-3 py-2">
       <span className="text-sm text-muted-foreground w-36 shrink-0">{label}</span>
-      <span className="text-sm text-foreground">{value}</span>
+      <span className="text-sm text-foreground whitespace-pre-wrap">{value}</span>
     </div>
   );
 }

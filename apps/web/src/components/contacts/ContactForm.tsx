@@ -21,6 +21,7 @@ type FormData = Omit<Contact, "id" | "userId" | "createdAt" | "updatedAt" | "arc
 interface Props {
   initial?: Partial<FormData>;
   onSubmit: (data: FormData) => Promise<void>;
+  onCancel?: () => void;
   submitLabel?: string;
 }
 
@@ -140,7 +141,7 @@ function CategorySelect({
   );
 }
 
-export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lưu" }: Props) {
+export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLabel = "Lưu" }: Props) {
   const { getToken }   = useAuth();
   const [allCats, setAllCats] = useState<Category[]>([]);
   const [form, setForm] = useState<Partial<FormData>>({
@@ -289,7 +290,12 @@ export default function ContactForm({ initial = {}, onSubmit, submitLabel = "Lư
         <TextInput label="Ghi chú" name="notes" value={form.notes ?? ""} onChange={set} />
       </section>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+            Huỷ
+          </Button>
+        )}
         <Button type="submit" disabled={loading}>
           {loading ? "Đang lưu..." : submitLabel}
         </Button>

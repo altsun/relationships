@@ -40,7 +40,7 @@ export default function ContactEditPage() {
         <h1 className="text-xl font-semibold text-foreground mb-6">Chỉnh sửa: {contact.fullName}</h1>
         <Card>
           <CardContent className="py-6">
-            <ContactForm initial={initial} onSubmit={handleSubmit} submitLabel="Cập nhật" />
+            <ContactForm initial={initial} onSubmit={handleSubmit} onCancel={() => navigate(`/contacts/${id}`)} submitLabel="Cập nhật" />
           </CardContent>
         </Card>
       </div>

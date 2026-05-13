@@ -94,9 +94,15 @@ export default function ContactDetailPage() {
                     </a>
                   )}
                   {contact.facebook && (
-                    <a href={contact.facebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary text-sm hover:underline">
-                      <Facebook size={14} /> Facebook
-                    </a>
+                    /^https?:\/\//i.test(contact.facebook) ? (
+                      <a href={contact.facebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary text-sm hover:underline">
+                        <Facebook size={14} /> Facebook
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-sm">
+                        <Facebook size={14} /> {contact.facebook}
+                      </span>
+                    )
                   )}
                 </div>
                 <Separator className="mb-1" />

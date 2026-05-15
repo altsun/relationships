@@ -7,8 +7,9 @@ import { CategoryBadge } from "@/components/CategoryBadge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import ContactNotes from "@/components/contacts/ContactNotes";
 import { api } from "@/lib/api";
-import type { Contact } from "@/types";
+import type { Contact, ContactNote } from "@/types";
 
 function Row({ label, value }: { label: string; value?: string | number | null }) {
   if (!value) return null;
@@ -25,13 +26,18 @@ export default function ContactDetailPage() {
   const { getToken } = useAuth();
   const navigate     = useNavigate();
   const [contact, setContact] = useState<Contact | null>(null);
+  const [notes, setNotes]     = useState<ContactNote[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const token = await getToken();
-      const data  = await api.contacts.get(id!, token!) as Contact;
+      const [data, noteData] = await Promise.all([
+        api.contacts.get(id!, token!) as Promise<Contact>,
+        api.notes.list(id!, token!) as Promise<ContactNote[]>,
+      ]);
       setContact(data);
+      setNotes(noteData);
       setLoading(false);
     })();
   }, [id, getToken]);
@@ -116,6 +122,8 @@ export default function ContactDetailPage() {
             <Row label="Địa chỉ"    value={contact.address} />
             <Row label="Đại học"     value={contact.university} />
             <Row label="THPT"        value={contact.highSchool} />
+            <Row label="Chức danh"   value={contact.jobTitle} />
+            <Row label="Ghi chú CV"  value={contact.jobNotes} />
             {contact.hasWorkSchedule && (
               <>
                 <Row label="Vào làm sáng"  value={contact.workStartAm} />
@@ -140,6 +148,11 @@ export default function ContactDetailPage() {
             <Row label="Ghi chú" value={contact.notes} />
           </CardContent>
         </Card>
+
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ghi chú khác</h2>
+          <ContactNotes contactId={id!} notes={notes} onChange={setNotes} />
+        </div>
       </div>
     </Layout>
   );

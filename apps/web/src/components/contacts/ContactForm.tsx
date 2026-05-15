@@ -189,7 +189,7 @@ export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLa
     fullName: "", phone: "", facebook: "", zalo: "", tiktok: "",
     birthday: "", birthYear: undefined,
     hometown: "", address: "", university: "", highSchool: "",
-    jobTitle: "", hasWorkSchedule: false,
+    jobTitle: "", jobNotes: "", hasWorkSchedule: false,
     workStartAm: "", lunchBreak: "", workStartPm: "", workEndPm: "",
     notes: "",
     categoryIds: [],
@@ -289,6 +289,10 @@ export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLa
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Công việc</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="Chức danh" name="jobTitle" value={form.jobTitle ?? ""} onChange={set} />
+        </div>
+        <div className="mt-4 space-y-1">
+          <Label htmlFor="jobNotes">Ghi chú công việc</Label>
+          <Textarea id="jobNotes" name="jobNotes" value={form.jobNotes ?? ""} onChange={set} rows={3} placeholder="Mô tả công việc, nơi làm việc..." />
         </div>
         <div className="mt-3 flex items-center gap-2">
           <input

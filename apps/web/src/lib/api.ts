@@ -35,6 +35,16 @@ export const api = {
     unarchive: (id: string, token: string) =>
       request(`/api/contacts/${id}/unarchive`, { method: "PATCH" }, token),
   },
+  notes: {
+    list:   (contactId: string, token: string) =>
+      request(`/api/contacts/${contactId}/notes`, {}, token),
+    create: (contactId: string, content: string, token: string) =>
+      request(`/api/contacts/${contactId}/notes`, { method: "POST", body: JSON.stringify({ content }) }, token),
+    update: (contactId: string, noteId: string, content: string, token: string) =>
+      request(`/api/contacts/${contactId}/notes/${noteId}`, { method: "PUT", body: JSON.stringify({ content }) }, token),
+    remove: (contactId: string, noteId: string, token: string) =>
+      request(`/api/contacts/${contactId}/notes/${noteId}`, { method: "DELETE" }, token),
+  },
   birthdays: {
     upcoming: (token: string) => request("/api/birthdays/upcoming", {}, token),
   },

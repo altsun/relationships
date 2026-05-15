@@ -25,6 +25,7 @@ export const contacts = pgTable("contacts", {
   highSchool:  text("high_school"),
 
   jobTitle:        text("job_title"),
+  jobNotes:        text("job_notes"),
   hasWorkSchedule: boolean("has_work_schedule").default(false),
   workStartAm:     time("work_start_am"),
   lunchBreak:      time("lunch_break"),
@@ -60,9 +61,20 @@ export const contactCategories = pgTable("contact_categories", {
   primaryKey({ columns: [t.contactId, t.categoryId] }),
 ]);
 
-// Relations — dùng để Drizzle tự join khi query
+export const contactNotes = pgTable("contact_notes", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  contactId: uuid("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  content:   text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => [
+  index("contact_notes_contact_id_idx").on(t.contactId),
+]);
+
+// Relations
 export const contactsRelations = relations(contacts, ({ many }) => ({
   contactCategories: many(contactCategories),
+  notes:             many(contactNotes),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -70,12 +82,18 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 }));
 
 export const contactCategoriesRelations = relations(contactCategories, ({ one }) => ({
-  contact:  one(contacts,  { fields: [contactCategories.contactId],  references: [contacts.id] }),
+  contact:  one(contacts,   { fields: [contactCategories.contactId],  references: [contacts.id] }),
   category: one(categories, { fields: [contactCategories.categoryId], references: [categories.id] }),
 }));
 
-export type Contact             = typeof contacts.$inferSelect;
-export type NewContact          = typeof contacts.$inferInsert;
-export type Category            = typeof categories.$inferSelect;
-export type NewCategory         = typeof categories.$inferInsert;
-export type ContactCategory     = typeof contactCategories.$inferSelect;
+export const contactNotesRelations = relations(contactNotes, ({ one }) => ({
+  contact: one(contacts, { fields: [contactNotes.contactId], references: [contacts.id] }),
+}));
+
+export type Contact         = typeof contacts.$inferSelect;
+export type NewContact      = typeof contacts.$inferInsert;
+export type Category        = typeof categories.$inferSelect;
+export type NewCategory     = typeof categories.$inferInsert;
+export type ContactCategory = typeof contactCategories.$inferSelect;
+export type ContactNote     = typeof contactNotes.$inferSelect;
+export type NewContactNote  = typeof contactNotes.$inferInsert;

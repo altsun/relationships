@@ -24,6 +24,7 @@ export interface Contact {
   university: string | null;
   highSchool: string | null;
   jobTitle: string | null;
+  jobNotes: string | null;
   hasWorkSchedule: boolean | null;
   workStartAm: string | null;
   lunchBreak: string | null;
@@ -34,6 +35,14 @@ export interface Contact {
   notes: string | null;
   archivedAt: string | null;
   categories?: Category[];
+}
+
+export interface ContactNote {
+  id: string;
+  contactId: string;
+  content: string;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface BirthdayContact {

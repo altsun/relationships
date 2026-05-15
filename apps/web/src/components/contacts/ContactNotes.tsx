@@ -74,6 +74,37 @@ export default function ContactNotes({ contactId, notes, onChange }: Props) {
 
   return (
     <div className="space-y-3">
+      {adding ? (
+        <div className="space-y-2">
+          <Textarea
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            rows={3}
+            placeholder="Nhập ghi chú..."
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Escape") cancelAdd();
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd();
+            }}
+          />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleAdd} disabled={saving || !newContent.trim()}>
+              <Check size={14} /> Thêm
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelAdd} disabled={saving}>
+              <X size={14} /> Huỷ
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={startAdd}
+          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+        >
+          <Plus size={15} /> Thêm ghi chú
+        </button>
+      )}
+
       {notes.map((note) => (
         <div key={note.id} className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
           {editingId === note.id ? (
@@ -123,37 +154,6 @@ export default function ContactNotes({ contactId, notes, onChange }: Props) {
           )}
         </div>
       ))}
-
-      {adding ? (
-        <div className="space-y-2">
-          <Textarea
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            rows={3}
-            placeholder="Nhập ghi chú..."
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Escape") cancelAdd();
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd();
-            }}
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleAdd} disabled={saving || !newContent.trim()}>
-              <Check size={14} /> Thêm
-            </Button>
-            <Button size="sm" variant="ghost" onClick={cancelAdd} disabled={saving}>
-              <X size={14} /> Huỷ
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={startAdd}
-          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
-        >
-          <Plus size={15} /> Thêm ghi chú
-        </button>
-      )}
     </div>
   );
 }

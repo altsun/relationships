@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
 import { eq, and, isNull, isNotNull, or, ilike, inArray } from "drizzle-orm";
 import { db } from "../db";
-import { contacts, contactCategories, categories } from "../db/schema";
+import { contacts, contactCategories, categories, contactNotes } from "../db/schema";
 
 const app = new Hono();
 
@@ -193,6 +193,74 @@ app.patch("/:id/unarchive", async (c) => {
     .returning();
   if (!row) return c.json({ error: "Not found" }, 404);
   return c.json(row);
+});
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+
+async function requireContact(contactId: string, userId: string) {
+  return db.query.contacts.findFirst({
+    where: and(eq(contacts.id, contactId), eq(contacts.userId, userId)),
+  });
+}
+
+// GET /api/contacts/:id/notes
+app.get("/:id/notes", async (c) => {
+  const userId    = getAuth(c)!.userId!;
+  const contactId = c.req.param("id");
+  if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
+
+  const notes = await db.query.contactNotes.findMany({
+    where: eq(contactNotes.contactId, contactId),
+    orderBy: (t, { desc }) => [desc(t.createdAt)],
+  });
+  return c.json(notes);
+});
+
+// POST /api/contacts/:id/notes
+app.post("/:id/notes", async (c) => {
+  const userId    = getAuth(c)!.userId!;
+  const contactId = c.req.param("id");
+  if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
+
+  const { content } = await c.req.json<{ content: string }>();
+  if (!content?.trim()) return c.json({ error: "content is required" }, 400);
+
+  const [note] = await db.insert(contactNotes).values({ contactId, content: content.trim() }).returning();
+  return c.json(note, 201);
+});
+
+// PUT /api/contacts/:id/notes/:noteId
+app.put("/:id/notes/:noteId", async (c) => {
+  const userId    = getAuth(c)!.userId!;
+  const contactId = c.req.param("id");
+  const noteId    = c.req.param("noteId");
+  if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
+
+  const { content } = await c.req.json<{ content: string }>();
+  if (!content?.trim()) return c.json({ error: "content is required" }, 400);
+
+  const [note] = await db
+    .update(contactNotes)
+    .set({ content: content.trim(), updatedAt: new Date() })
+    .where(and(eq(contactNotes.id, noteId), eq(contactNotes.contactId, contactId)))
+    .returning();
+  if (!note) return c.json({ error: "Not found" }, 404);
+  return c.json(note);
+});
+
+// DELETE /api/contacts/:id/notes/:noteId
+app.delete("/:id/notes/:noteId", async (c) => {
+  const userId    = getAuth(c)!.userId!;
+  const contactId = c.req.param("id");
+  const noteId    = c.req.param("noteId");
+  if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
+
+  const [note] = await db
+    .delete(contactNotes)
+    .where(and(eq(contactNotes.id, noteId), eq(contactNotes.contactId, contactId)))
+    .returning();
+  if (!note) return c.json({ error: "Not found" }, 404);
+  return c.json({ success: true });
 });
 
 export default app;

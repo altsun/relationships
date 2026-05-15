@@ -4,7 +4,6 @@ import { clerkMiddleware, requireAuth } from "./middleware/auth";
 import contactsRoute   from "./routes/contacts";
 import birthdaysRoute  from "./routes/birthdays";
 import categoriesRoute from "./routes/categories";
-import notesRoute      from "./routes/notes";
 
 const app = new Hono();
 
@@ -25,9 +24,8 @@ app.use("*", clerkMiddleware());
 app.get("/", (c) => c.json({ ok: true }));
 
 app.use("/api/*", requireAuth);
-app.route("/api/contacts",                contactsRoute);
-app.route("/api/contacts/:id/notes",      notesRoute);
-app.route("/api/birthdays",               birthdaysRoute);
-app.route("/api/categories",              categoriesRoute);
+app.route("/api/contacts",   contactsRoute);
+app.route("/api/birthdays",  birthdaysRoute);
+app.route("/api/categories", categoriesRoute);
 
 export default app;

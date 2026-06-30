@@ -118,6 +118,7 @@ export default function ContactDetailPage() {
             <Row label="Zalo"        value={contact.zalo} />
             <Row label="TikTok"      value={contact.tiktok} />
             <Row label="Sinh nhật"   value={contact.birthday ? `${contact.birthday.split("-").reverse().join("/")}${contact.birthYear ? ` (${contact.birthYear})` : ""}` : null} />
+            {!contact.birthday && <Row label="Năm sinh" value={contact.birthYear} />}
             <Row label="Quê quán"    value={contact.hometown} />
             <Row label="Địa chỉ"    value={contact.address} />
             <Row label="Đại học"     value={contact.university} />

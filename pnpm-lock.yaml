@@ -17,8 +17,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.1(@clerk/backend@1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.13.19)
       '@hono/node-server':
-        specifier: ^2.1.7
-        version: 2.1.7(hono@4.13.19)
+        specifier: ^2.1.8
+        version: 2.1.8(hono@4.13.19)
       '@neondatabase/serverless':
         specifier: ^0.10.4
         version: 0.10.4
@@ -969,8 +969,8 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@hono/node-server@2.1.7':
-    resolution: {integrity: sha512-Wr0E6S+v2Bw9FkpGNP5BQ5QbJvclUa06UVehd65WFZe6XeJwbrKQQ5wPDevc0IC+QyzbO7v3Llh5uo45IZcSnA==}
+  '@hono/node-server@2.1.8':
+    resolution: {integrity: sha512-jdf7FHh6A1lzjpHHQUgxsg2GeER2vMetnAOfeActzcoli6jamlK+NAwL6Dsr5Fl3BS3tYUQzCdtZjU8Qxv7bEA==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4 || ^5.0.0-0
@@ -3347,7 +3347,7 @@ snapshots:
     dependencies:
       hono: 4.13.19
 
-  '@hono/node-server@2.1.7(hono@4.13.19)':
+  '@hono/node-server@2.1.8(hono@4.13.19)':
     dependencies:
       hono: 4.13.19
 
@@ -3374,7 +3374,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.13.19)
       ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
+      ajv-formats: 3.0.1
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -3635,8 +3635,8 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.0.0
 
-  ajv-formats@3.0.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@3.0.1:
+    dependencies:
       ajv: 8.20.0
 
   ajv@8.20.0:

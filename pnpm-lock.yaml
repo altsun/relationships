@@ -15,10 +15,10 @@ importers:
         version: 1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@hono/clerk-auth':
         specifier: ^2.0.0
-        version: 2.0.1(@clerk/backend@1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.13.9)
+        version: 2.0.1(@clerk/backend@1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.13.19)
       '@hono/node-server':
-        specifier: ^2.1.1
-        version: 2.1.1(hono@4.13.9)
+        specifier: ^2.1.7
+        version: 2.1.7(hono@4.13.19)
       '@neondatabase/serverless':
         specifier: ^0.10.4
         version: 0.10.4
@@ -29,8 +29,8 @@ importers:
         specifier: ^0.44.0
         version: 0.44.7(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)
       hono:
-        specifier: ^4.13.9
-        version: 4.13.9
+        specifier: ^4.13.19
+        version: 4.13.19
       ws:
         specifier: ^8.21.3
         version: 8.21.3
@@ -969,11 +969,11 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@hono/node-server@2.1.1':
-    resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
+  '@hono/node-server@2.1.7':
+    resolution: {integrity: sha512-Wr0E6S+v2Bw9FkpGNP5BQ5QbJvclUa06UVehd65WFZe6XeJwbrKQQ5wPDevc0IC+QyzbO7v3Llh5uo45IZcSnA==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: ^4
+      hono: ^4 || ^5.0.0-0
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1850,12 +1850,8 @@ packages:
     resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
     engines: {node: '>= 0.4'}
 
-  hono@4.12.18:
-    resolution: {integrity: sha512-RWzP96k/yv0PQfyXnWjs6zot20TqfpfsNXhOnev8d1InAxubW93L11/oNUc3tQqn2G0bSdAOBpX+2uDFHV7kdQ==}
-    engines: {node: '>=16.9.0'}
-
-  hono@4.13.9:
-    resolution: {integrity: sha512-7dMkQmZoC4E6F7AtaQSPhlWAdnBti+j7rreMZl8QB4jFiEhP9TWbGWUMi8WYzBCgmgulxuvLQupKqo+Co6Omyg==}
+  hono@4.13.19:
+    resolution: {integrity: sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==}
     engines: {node: '>=16.9.0'}
 
   http-errors@2.0.1:
@@ -3342,18 +3338,18 @@ snapshots:
 
   '@fontsource-variable/geist@5.3.0': {}
 
-  '@hono/clerk-auth@2.0.1(@clerk/backend@1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.13.9)':
+  '@hono/clerk-auth@2.0.1(@clerk/backend@1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.13.19)':
     dependencies:
       '@clerk/backend': 1.34.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      hono: 4.13.9
+      hono: 4.13.19
 
-  '@hono/node-server@1.19.14(hono@4.12.18)':
+  '@hono/node-server@1.19.14(hono@4.13.19)':
     dependencies:
-      hono: 4.12.18
+      hono: 4.13.19
 
-  '@hono/node-server@2.1.1(hono@4.13.9)':
+  '@hono/node-server@2.1.7(hono@4.13.19)':
     dependencies:
-      hono: 4.13.9
+      hono: 4.13.19
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -3376,7 +3372,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 1.19.14(hono@4.12.18)
+      '@hono/node-server': 1.19.14(hono@4.13.19)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -3386,7 +3382,7 @@ snapshots:
       eventsource-parser: 3.0.8
       express: 5.2.1
       express-rate-limit: 8.5.1(express@5.2.1)
-      hono: 4.12.18
+      hono: 4.13.19
       jose: 6.2.3
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -4158,9 +4154,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.12.18: {}
-
-  hono@4.13.9: {}
+  hono@4.13.19: {}
 
   http-errors@2.0.1:
     dependencies:

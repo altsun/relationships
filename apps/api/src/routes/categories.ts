@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getAuth } from "@hono/clerk-auth";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { categories, contactCategories } from "../db/schema";
 
@@ -89,11 +89,21 @@ app.delete("/:id", async (c) => {
   const id         = c.req.param("id");
   const forceParam = c.req.query("force");
 
+  const ownedCategory = and(eq(categories.id, id), eq(categories.userId, userId));
+  const category = await db.query.categories.findFirst({
+    columns: { id: true },
+    where: ownedCategory,
+  });
+  if (!category) return c.json({ error: "Not found" }, 404);
+
+  const ownedCategoryIds = db.select({ id: categories.id }).from(categories).where(ownedCategory);
+  const ownedLinks = inArray(contactCategories.categoryId, ownedCategoryIds);
+
   // Kiểm tra có contact nào đang dùng không
   const [usage] = await db
     .select({ total: count() })
     .from(contactCategories)
-    .where(eq(contactCategories.categoryId, id));
+    .where(ownedLinks);
 
   const total = Number(usage?.total ?? 0);
 
@@ -106,12 +116,12 @@ app.delete("/:id", async (c) => {
 
   // Nếu force=true, gỡ liên kết trước rồi xoá
   if (total > 0) {
-    await db.delete(contactCategories).where(eq(contactCategories.categoryId, id));
+    await db.delete(contactCategories).where(ownedLinks);
   }
 
   const [row] = await db
     .delete(categories)
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+    .where(ownedCategory)
     .returning();
 
   if (!row) return c.json({ error: "Not found" }, 404);

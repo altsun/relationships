@@ -29,6 +29,23 @@ async function getContactCategoryIds(contactId: string): Promise<string[]> {
   return rows.map((r) => r.categoryId);
 }
 
+const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+
+async function ownedCategoryIds(value: unknown, userId: string): Promise<string[] | null> {
+  if (!Array.isArray(value) || !value.every((id) => typeof id === "string" && uuidPattern.test(id))) {
+    return null;
+  }
+
+  const ids = [...new Set(value.map((id: string) => id.toLowerCase()))];
+  if (ids.length === 0) return ids;
+
+  const rows = await db.query.categories.findMany({
+    columns: { id: true },
+    where: and(eq(categories.userId, userId), inArray(categories.id, ids)),
+  });
+  return rows.length === ids.length ? ids : null;
+}
+
 // Gán categories cho contact (replace toàn bộ) — atomic
 async function syncCategories(contactId: string, categoryIds: string[]) {
   await db.delete(contactCategories).where(eq(contactCategories.contactId, contactId));
@@ -40,7 +57,7 @@ async function syncCategories(contactId: string, categoryIds: string[]) {
 }
 
 // Lấy contacts kèm categories (join thủ công để tránh N+1)
-async function withCategories(rows: (typeof contacts.$inferSelect)[]) {
+async function withCategories(rows: (typeof contacts.$inferSelect)[], userId: string) {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
 
@@ -54,7 +71,7 @@ async function withCategories(rows: (typeof contacts.$inferSelect)[]) {
     })
     .from(contactCategories)
     .innerJoin(categories, eq(contactCategories.categoryId, categories.id))
-    .where(inArray(contactCategories.contactId, ids))
+    .where(and(inArray(contactCategories.contactId, ids), eq(categories.userId, userId)))
     .orderBy(categories.sortIndex);
 
   const map = new Map<string, typeof junctions>();
@@ -96,12 +113,13 @@ app.get("/", async (c) => {
     const inCategory = await db
       .select({ contactId: contactCategories.contactId })
       .from(contactCategories)
-      .where(eq(contactCategories.categoryId, categoryId));
+      .innerJoin(categories, eq(contactCategories.categoryId, categories.id))
+      .where(and(eq(contactCategories.categoryId, categoryId), eq(categories.userId, userId)));
     const idSet = new Set(inCategory.map((r) => r.contactId));
     rows = rows.filter((r) => idSet.has(r.id));
   }
 
-  return c.json(await withCategories(rows));
+  return c.json(await withCategories(rows, userId));
 });
 
 // GET /api/contacts/archived
@@ -111,7 +129,7 @@ app.get("/archived", async (c) => {
     where: and(eq(contacts.userId, userId), isNotNull(contacts.archivedAt)),
     orderBy: (t, { desc }) => [desc(t.archivedAt)],
   });
-  return c.json(await withCategories(rows));
+  return c.json(await withCategories(rows, userId));
 });
 
 // GET /api/contacts/:id
@@ -121,20 +139,22 @@ app.get("/:id", async (c) => {
     where: and(eq(contacts.id, c.req.param("id")), eq(contacts.userId, userId)),
   });
   if (!row) return c.json({ error: "Not found" }, 404);
-  const [withCat] = await withCategories([row]);
+  const [withCat] = await withCategories([row], userId);
   return c.json(withCat);
 });
 
 // POST /api/contacts
 app.post("/", async (c) => {
   const userId = getAuth(c)!.userId!;
-  const { categoryIds = [], ...body } = await c.req.json<{ categoryIds?: string[]; [k: string]: unknown }>();
+  const { categoryIds: input = [], ...body } = await c.req.json<Record<string, unknown>>();
+  const categoryIds = await ownedCategoryIds(input, userId);
+  if (!categoryIds) return c.json({ error: "Invalid categoryIds" }, 400);
 
   const [row] = await db.insert(contacts).values({ ...sanitize(body), userId } as typeof contacts.$inferInsert).returning();
 
   await syncCategories(row.id, categoryIds);
 
-  const [withCat] = await withCategories([row]);
+  const [withCat] = await withCategories([row], userId);
   return c.json(withCat, 201);
 });
 
@@ -142,7 +162,9 @@ app.post("/", async (c) => {
 app.put("/:id", async (c) => {
   const userId = getAuth(c)!.userId!;
   const id     = c.req.param("id");
-  const { categoryIds, ...body } = await c.req.json<{ categoryIds?: string[]; [k: string]: unknown }>();
+  const { categoryIds: input, ...body } = await c.req.json<Record<string, unknown>>();
+  const categoryIds = input === undefined ? undefined : await ownedCategoryIds(input, userId);
+  if (categoryIds === null) return c.json({ error: "Invalid categoryIds" }, 400);
 
   const [row] = await db
     .update(contacts)
@@ -156,7 +178,7 @@ app.put("/:id", async (c) => {
     await syncCategories(id, categoryIds);
   }
 
-  const [withCat] = await withCategories([row]);
+  const [withCat] = await withCategories([row], userId);
   return c.json(withCat);
 });
 

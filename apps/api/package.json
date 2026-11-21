@@ -20,6 +20,7 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.17",
     "@types/node": "^22.0.0",
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.23.15",

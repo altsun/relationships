@@ -218,3 +218,20 @@ for (const { categoryId, expected, name } of [
     assert.equal(queries.length, results.length);
   });
 }
+
+test("invalid write payloads and malformed IDs are rejected without a database query", async (t) => {
+  const { app, queries } = setup(t, []);
+  for (const [method, path, body] of [
+    ["POST", "/api/contacts", null],
+    ["POST", "/api/contacts", { fullName: "Example", birthday: "99-01" }],
+    ["POST", "/api/categories", { name: 2, color: "#123456" }],
+    ["PATCH", "/api/categories/reorder", [{ id: ownedId, sortIndex: "0" }]],
+  ]) {
+    const response = await app.request(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    assert.equal(response.status, 400);
+    assert.equal(typeof (await response.json()).error, "string");
+  }
+  assert.equal((await app.request("/api/contacts/not-a-uuid")).status, 404);
+  assert.equal((await app.request("/api/categories/not-a-uuid", { method: "DELETE" })).status, 404);
+  assert.equal(queries.length, 0);
+});

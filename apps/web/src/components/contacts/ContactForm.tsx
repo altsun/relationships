@@ -217,7 +217,7 @@ export default function ContactForm({ initial = {}, onSubmit, onCancel, submitLa
       [name]: type === "checkbox"
         ? (e.target as HTMLInputElement).checked
         : type === "number"
-          ? value === "" ? undefined : Number(value)
+          ? value === "" ? null : Number(value)
           : value,
     }));
   };

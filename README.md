@@ -1,6 +1,6 @@
 # Relationship Manager
 
-A personal contact manager — track relationships, birthdays, and categories.
+A privacy-focused personal CRM — track relationships, birthdays, categories, and notes. Source code and a hosted instance's private contact data are separate. Self-hosting requires your own authentication and database configuration.
 
 ## Stack
 
@@ -38,8 +38,7 @@ relationships/
 
 ### Prerequisites
 
-- Node.js ≥ 20
-- pnpm ≥ 9 (`npm i -g pnpm`)
+- Node.js 24 and pnpm 11.25.0 (matching CI)
 
 ### Setup
 
@@ -125,3 +124,13 @@ All `/api/*` routes require `Authorization: Bearer <clerk-token>`.
 - **Clerk JWKS caching**: `clerkMiddleware()` creates a singleton `ClerkClient` at module load so JWKS is cached across warm requests. Do not recreate the client per-request.
 - **pnpm lock file**: Always install from repo root (`pnpm install`) so all workspaces use the same lock file. Installing inside `apps/api` alone can resolve different versions.
 - **neon-http**: Uses `drizzle-orm/neon-http` (HTTP-based, no WebSocket). Transactions are not supported — use sequential queries instead.
+
+## Security and privacy
+
+Keep all credentials in environment variables and never commit real contact data. The API requires authentication, scopes account data by the authenticated user, and does not cache personal API responses. Set `WEB_ORIGIN` explicitly for each deployment; configure shared rate limiting on the API edge and isolate production from development/preview databases and Clerk instances. These controls do not replace a deployment security review.
+
+Report vulnerabilities privately: [Security policy](SECURITY.md). Before publishing or deploying this project, review the [open-source release gate](docs/open-source-readiness.md).
+
+## Contributing and license
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). This project is licensed under [GNU AGPL-3.0-only](LICENSE).

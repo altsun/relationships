@@ -92,6 +92,34 @@ test("contact reads enforce category ownership in PostgreSQL", async (t) => {
     });
   }
 
+  await t.test("foreign contact and note writes cannot access another account", async () => {
+    const noteId = "66666666-6666-4666-8666-666666666666";
+    await database.insert(schema.contactNotes).values({ id: noteId, contactId: otherContact, content: "Private synthetic note" });
+    const path = "/api/contacts/" + otherContact;
+    for (const [method, suffix, body] of [
+      ["PUT", "", { fullName: "Changed" }],
+      ["DELETE", ""],
+      ["PATCH", "/archive"],
+      ["PATCH", "/unarchive"],
+      ["GET", "/notes"],
+      ["POST", "/notes", { content: "Changed" }],
+      ["PUT", "/notes/" + noteId, { content: "Changed" }],
+      ["DELETE", "/notes/" + noteId],
+      ["PUT", "/notes/" + noteId, { content: "Changed" }, active],
+      ["DELETE", "/notes/" + noteId, undefined, active],
+    ].map(([method, suffix, body, contactId]) => [method, contactId ? "/api/contacts/" + contactId + suffix : path + suffix, body])) {
+      const response = await app.request(suffix, {
+        method,
+        ...(body ? { headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}),
+      });
+      assert.equal(response.status, 404, method + " " + suffix);
+    }
+    const foreignContacts = await database.select().from(schema.contacts);
+    assert.equal(foreignContacts.find(c => c.id === otherContact).fullName, "Other account fixture");
+    const notes = await database.select().from(schema.contactNotes);
+    assert.deepEqual(notes.map(n => n.content), ["Private synthetic note"]);
+  });
+
   await t.test("contact detail from another account returns 404", async () => {
     const response = await app.request("/api/contacts/" + otherContact);
     assert.equal(response.status, 404);

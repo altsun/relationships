@@ -8,6 +8,13 @@
       "when": 1778393852670,
       "tag": "0000_wonderful_fixer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778393852671,
+      "tag": "0001_add_job_notes_and_contact_notes",
+      "breakpoints": true
     }
   ]
 }

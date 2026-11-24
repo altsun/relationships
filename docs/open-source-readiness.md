@@ -5,7 +5,7 @@ This checklist is deliberately not a declaration that the hosted service is secu
 ## Repository and history
 
 - [ ] Confirm the maintainer has rights to all code and assets and approves AGPL-3.0-only licensing.
-- [ ] Require the **Secret history scan** and **Relationships checks** workflows to pass. The scan checks reachable history from fetched branches and tags; it does not prove that no secret or personal data ever existed.
+- [ ] Require the **Secret history scan** and **Relationships checks** workflows to pass. The scan checks reachable history from fetched branches, tags, and historical GitHub PR heads; it does not prove that no secret or personal data ever existed.
 - [ ] Independently inspect all refs, deleted branches/PR refs when accessible, commit metadata, issues, PR descriptions/reviews, attachments, release assets, and CI logs/artifacts for real personal data, deployment identifiers and credentials. Review screenshots visually. Review private commit emails before publication.
 - [ ] If a real secret is found, revoke/rotate it first, remove it from all affected refs/history, and re-scan. If sensitive history cannot be cleaned confidently, publish a fresh sanitized repository instead. Do not put secret values in an issue or log.
 - [ ] Enable private vulnerability reporting, branch protection and dependency/security alerts where available. Check public fork PRs cannot access secrets.
@@ -28,6 +28,7 @@ Install Gitleaks from its official releases, fetch all relevant refs in a privat
 
 ```sh
 git fetch --all --tags --prune
+git fetch origin '+refs/pull/*/head:refs/remotes/audit-pulls/*'
 gitleaks git --redact=100 --log-opts="--all --full-history -m" .
 gitleaks dir --redact=100 .
 ```

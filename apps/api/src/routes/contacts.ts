@@ -3,22 +3,9 @@ import { getAuth } from "@hono/clerk-auth";
 import { eq, and, isNull, isNotNull, or, ilike, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { contacts, contactCategories, categories, contactNotes } from "../db/schema";
+import { contactValues, noteContent, readObject, validUuid } from "../validation";
 
 const app = new Hono();
-
-// Làm sạch body trước khi insert/update
-function sanitize(body: Record<string, unknown>): Record<string, unknown> {
-  // Loại bỏ các field do DB quản lý — client không được ghi đè
-  const readonly = ["id", "userId", "createdAt", "updatedAt", "archivedAt", "categoryIds", "categories"];
-  const timeFields    = ["workStartAm", "lunchBreak", "workStartPm", "workEndPm"];
-  const numericFields = ["birthYear"];
-
-  const out: Record<string, unknown> = { ...body };
-  for (const key of readonly) delete out[key];
-  for (const key of timeFields)    { if (out[key] === "") out[key] = null; }
-  for (const key of numericFields) { if (out[key] === "" || out[key] === undefined) out[key] = null; }
-  return out;
-}
 
 // Lấy danh sách categoryId của một contact
 async function getContactCategoryIds(contactId: string): Promise<string[]> {
@@ -29,10 +16,8 @@ async function getContactCategoryIds(contactId: string): Promise<string[]> {
   return rows.map((r) => r.categoryId);
 }
 
-const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-
 async function ownedCategoryIds(value: unknown, userId: string): Promise<string[] | null> {
-  if (!Array.isArray(value) || !value.every((id) => typeof id === "string" && uuidPattern.test(id))) {
+  if (!Array.isArray(value) || value.length > 200 || !value.every(validUuid)) {
     return null;
   }
 
@@ -92,6 +77,8 @@ app.get("/", async (c) => {
   const search     = c.req.query("search") ?? "";
   const sort       = c.req.query("sort")   ?? "fullName";
   const categoryId = c.req.query("categoryId");
+  if (categoryId && !validUuid(categoryId)) return c.json({ error: "Invalid categoryId" }, 400);
+  if (search.length > 500) return c.json({ error: "Invalid search" }, 400);
 
   let rows = await db.query.contacts.findMany({
     where: and(
@@ -134,6 +121,7 @@ app.get("/archived", async (c) => {
 
 // GET /api/contacts/:id
 app.get("/:id", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId = getAuth(c)!.userId!;
   const row = await db.query.contacts.findFirst({
     where: and(eq(contacts.id, c.req.param("id")), eq(contacts.userId, userId)),
@@ -146,11 +134,12 @@ app.get("/:id", async (c) => {
 // POST /api/contacts
 app.post("/", async (c) => {
   const userId = getAuth(c)!.userId!;
-  const { categoryIds: input = [], ...body } = await c.req.json<Record<string, unknown>>();
+  const { categoryIds: input = [], ...body } = await readObject(c);
+  const values = contactValues(body, true);
   const categoryIds = await ownedCategoryIds(input, userId);
   if (!categoryIds) return c.json({ error: "Invalid categoryIds" }, 400);
 
-  const [row] = await db.insert(contacts).values({ ...sanitize(body), userId } as typeof contacts.$inferInsert).returning();
+  const [row] = await db.insert(contacts).values({ ...values, userId } as typeof contacts.$inferInsert).returning();
 
   await syncCategories(row.id, categoryIds);
 
@@ -160,15 +149,17 @@ app.post("/", async (c) => {
 
 // PUT /api/contacts/:id
 app.put("/:id", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId = getAuth(c)!.userId!;
   const id     = c.req.param("id");
-  const { categoryIds: input, ...body } = await c.req.json<Record<string, unknown>>();
+  const { categoryIds: input, ...body } = await readObject(c);
+  const values = contactValues(body, false);
   const categoryIds = input === undefined ? undefined : await ownedCategoryIds(input, userId);
   if (categoryIds === null) return c.json({ error: "Invalid categoryIds" }, 400);
 
   const [row] = await db
     .update(contacts)
-    .set({ ...sanitize(body), updatedAt: new Date() })
+    .set({ ...values, updatedAt: new Date() })
     .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
     .returning();
 
@@ -184,6 +175,7 @@ app.put("/:id", async (c) => {
 
 // DELETE /api/contacts/:id
 app.delete("/:id", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId = getAuth(c)!.userId!;
   const [row] = await db
     .delete(contacts)
@@ -195,6 +187,7 @@ app.delete("/:id", async (c) => {
 
 // PATCH /api/contacts/:id/archive
 app.patch("/:id/archive", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId = getAuth(c)!.userId!;
   const [row] = await db
     .update(contacts)
@@ -207,6 +200,7 @@ app.patch("/:id/archive", async (c) => {
 
 // PATCH /api/contacts/:id/unarchive
 app.patch("/:id/unarchive", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId = getAuth(c)!.userId!;
   const [row] = await db
     .update(contacts)
@@ -227,6 +221,7 @@ async function requireContact(contactId: string, userId: string) {
 
 // GET /api/contacts/:id/notes
 app.get("/:id/notes", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId    = getAuth(c)!.userId!;
   const contactId = c.req.param("id");
   if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
@@ -240,30 +235,31 @@ app.get("/:id/notes", async (c) => {
 
 // POST /api/contacts/:id/notes
 app.post("/:id/notes", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId    = getAuth(c)!.userId!;
   const contactId = c.req.param("id");
   if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
 
-  const { content } = await c.req.json<{ content: string }>();
-  if (!content?.trim()) return c.json({ error: "content is required" }, 400);
+  const content = noteContent(await readObject(c));
 
-  const [note] = await db.insert(contactNotes).values({ contactId, content: content.trim() }).returning();
+  const [note] = await db.insert(contactNotes).values({ contactId, content }).returning();
   return c.json(note, 201);
 });
 
 // PUT /api/contacts/:id/notes/:noteId
 app.put("/:id/notes/:noteId", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId    = getAuth(c)!.userId!;
   const contactId = c.req.param("id");
   const noteId    = c.req.param("noteId");
+  if (!validUuid(noteId)) return c.json({ error: "Not found" }, 404);
   if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
 
-  const { content } = await c.req.json<{ content: string }>();
-  if (!content?.trim()) return c.json({ error: "content is required" }, 400);
+  const content = noteContent(await readObject(c));
 
   const [note] = await db
     .update(contactNotes)
-    .set({ content: content.trim(), updatedAt: new Date() })
+    .set({ content, updatedAt: new Date() })
     .where(and(eq(contactNotes.id, noteId), eq(contactNotes.contactId, contactId)))
     .returning();
   if (!note) return c.json({ error: "Not found" }, 404);
@@ -272,9 +268,11 @@ app.put("/:id/notes/:noteId", async (c) => {
 
 // DELETE /api/contacts/:id/notes/:noteId
 app.delete("/:id/notes/:noteId", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId    = getAuth(c)!.userId!;
   const contactId = c.req.param("id");
   const noteId    = c.req.param("noteId");
+  if (!validUuid(noteId)) return c.json({ error: "Not found" }, 404);
   if (!await requireContact(contactId, userId)) return c.json({ error: "Not found" }, 404);
 
   const [note] = await db

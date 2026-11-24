@@ -3,6 +3,7 @@ import { getAuth } from "@hono/clerk-auth";
 import { eq, and, count, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { categories, contactCategories } from "../db/schema";
+import { categoryValues, readObject, readJson, reorderValues, validUuid } from "../validation";
 
 const app = new Hono();
 
@@ -19,9 +20,7 @@ app.get("/", async (c) => {
 // POST /api/categories
 app.post("/", async (c) => {
   const userId = getAuth(c)!.userId!;
-  const { name, color, sortIndex = 0 } = await c.req.json<{
-    name: string; color: string; sortIndex?: number;
-  }>();
+  const { name, color, sortIndex } = categoryValues(await readObject(c), true);
 
   try {
     const [row] = await db
@@ -40,14 +39,11 @@ app.post("/", async (c) => {
 
 // PUT /api/categories/:id
 app.put("/:id", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId = getAuth(c)!.userId!;
   const id     = c.req.param("id");
-  const body   = await c.req.json<{ name?: string; color?: string; sortIndex?: number }>();
-
-  const update: Partial<typeof body> = {};
-  if (body.name  !== undefined) update.name      = body.name.trim();
-  if (body.color !== undefined) update.color     = body.color;
-  if (body.sortIndex !== undefined) update.sortIndex = body.sortIndex;
+  const update = categoryValues(await readObject(c), false);
+  if (Object.keys(update).length === 0) return c.json({ error: "No category fields provided" }, 400);
 
   try {
     const [row] = await db
@@ -60,7 +56,7 @@ app.put("/:id", async (c) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "";
     if (msg.includes("categories_user_name_uidx")) {
-      return c.json({ error: `Category "${body.name}" đã tồn tại` }, 409);
+      return c.json({ error: `Category "${update.name}" đã tồn tại` }, 409);
     }
     throw e;
   }
@@ -69,7 +65,7 @@ app.put("/:id", async (c) => {
 // PATCH /api/categories/reorder — bulk update sortIndex
 app.patch("/reorder", async (c) => {
   const userId = getAuth(c)!.userId!;
-  const items  = await c.req.json<{ id: string; sortIndex: number }[]>();
+  const items  = reorderValues(await readJson(c));
 
   await Promise.all(
     items.map(({ id, sortIndex }) =>
@@ -85,6 +81,7 @@ app.patch("/reorder", async (c) => {
 
 // DELETE /api/categories/:id
 app.delete("/:id", async (c) => {
+  if (!validUuid(c.req.param("id"))) return c.json({ error: "Not found" }, 404);
   const userId     = getAuth(c)!.userId!;
   const id         = c.req.param("id");
   const forceParam = c.req.query("force");

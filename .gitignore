@@ -55,3 +55,16 @@ desktop.ini
 
 # Vite
 *.local
+
+# Other environment files and local sensitive exports
+.env.*
+!.env.example
+*.pem
+*.key
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+/backups/
+/exports/

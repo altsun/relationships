@@ -1,0 +1,31 @@
+name: Relationships checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked workspace dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run API tests
+        run: pnpm --filter api exec node --import tsx --test 'test/*.test.cjs'
+      - name: Build API
+        run: pnpm build:api
+      - name: Build web
+        run: pnpm build:web

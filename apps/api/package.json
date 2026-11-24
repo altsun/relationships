@@ -15,7 +15,7 @@
     "@hono/node-server": "^2.1.8",
     "@neondatabase/serverless": "^0.10.4",
     "@types/ws": "^8.18.1",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.13.19",
     "ws": "^8.21.3"
   },

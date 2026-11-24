@@ -26,9 +26,14 @@ app.get("/upcoming", async (c) => {
     },
   });
 
-  const today = new Date();
-  const mm    = String(today.getMonth() + 1).padStart(2, "0");
-  const dd    = String(today.getDate()).padStart(2, "0");
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
+  // Preserve the runtime's local calendar date; use UTC only for day arithmetic.
+  const today = Date.UTC(year, month, day);
+  const mm    = String(month + 1).padStart(2, "0");
+  const dd    = String(day).padStart(2, "0");
   const todayStr = `${mm}-${dd}`;
 
   // Tính số ngày từ hôm nay tới sinh nhật (trong năm hiện tại hoặc năm sau)
@@ -37,11 +42,10 @@ app.get("/upcoming", async (c) => {
       const bday = r.birthday!; // "MM-DD"
       const [bm, bd] = bday.split("-").map(Number);
 
-      const thisYear  = new Date(today.getFullYear(), bm - 1, bd);
-      const nextYear  = new Date(today.getFullYear() + 1, bm - 1, bd);
+      const thisYear  = Date.UTC(year, bm - 1, bd);
+      const nextYear  = Date.UTC(year + 1, bm - 1, bd);
       const target    = thisYear >= today ? thisYear : nextYear;
-      const diffMs    = target.getTime() - today.setHours(0, 0, 0, 0);
-      const daysUntil = Math.ceil(diffMs / 86_400_000);
+      const daysUntil = (target - today) / 86_400_000;
 
       return { ...r, daysUntil, isToday: bday === todayStr };
     })
